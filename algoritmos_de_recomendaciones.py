@@ -43,6 +43,7 @@ def cargar_datos(config):
         "rating": "calificacion",
         "timestamp": "marca_tiempo"
     }, inplace=True)
+    
     tags.rename(columns={
         "userId": "id_usuario",
         "movieId": "id_pelicula",

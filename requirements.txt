@@ -4,3 +4,6 @@ python-multipart
 SQLAlchemy
 PyMySQL
 python-slugify
+python-jose
+scikit-learn
+pandas

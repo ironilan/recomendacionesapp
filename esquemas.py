@@ -2,10 +2,28 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date, datetime
 
+from typing import List
+
+
 class ResponseEsquema(BaseModel):
     mensaje: str
 
 
+    
+    
+class GeneroEsquema(BaseModel):
+    id:Optional[int] = ""
+    nombre:str
+    estado:Optional[int] =""
+    
+    class Config:
+        json_schema_extra={
+            "ejemplo": {                
+                "nombre": "Acción"
+            }
+        }
+        
+        
 class CategoriaEsquema(BaseModel):
     id:Optional[int] = ""
     nombre:str
@@ -24,18 +42,24 @@ class PeliculaEsquema(BaseModel):
     slug:Optional[str] = ""
     descripcion:str
     precio:float
-    categorias_id:int
+    imagen:str
     
     class Config:
         json_schema_extra={
             "ejemplo": {                
                 "nombre": "pelicula 1",
-                "slug": "pelicula-1",
+                "imagen": "pelicula-1",
                 "descripcion": "pelicula descripcion",
-                "precio": "10.00",
-                "categorias_id": 1
+                "precio": "10.00"
             }
         }
+        
+        
+class PaginacionResponse(BaseModel):
+    data: List[PeliculaEsquema]
+    page: int
+    total: int
+    total_page: int
 
 class PeliculaFotoEsquema(BaseModel):
     id:Optional[int] = ""
@@ -73,6 +97,10 @@ class UsuarioEsquema(BaseModel):
             }
         }
 
+class JwtEsquema(BaseModel):
+    token: str
+    nombre: str
+    id: int
 
 class LoginEsquema(BaseModel):
     correo: str

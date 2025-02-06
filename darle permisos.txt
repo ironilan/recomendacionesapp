@@ -1,0 +1,9 @@
+darle permisos
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+ejecutar el servicio
+ .\env\Scripts\Activate
+
+
+uvicorn main:app --port=5000 --reload
+

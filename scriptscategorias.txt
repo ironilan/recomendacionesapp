@@ -1,0 +1,56 @@
+@api.get("/categorias", tags=['Categorías'],response_model=List[CategoriaEsquema], status_code=status.HTTP_200_OK)
+async def categorias():
+    return conectar.execute(categorias_model.select().order_by(categorias_model.c.id.desc())).fetchall()
+
+
+
+@api.get("/categorias/{id}", tags=['Categorías'],response_model=CategoriaEsquema, status_code=status.HTTP_200_OK)
+async def categorias_get(id:int):
+    datos = conectar.execute(categorias_model.select().where(categorias_model.c.id==id)).first()
+    if datos:
+        return datos
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="sin resultados")
+
+
+
+@api.post("/categorias", tags=['Categorías'],response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
+async def categorias_post(model:CategoriaEsquema):
+    try:
+        conectar.execute(categorias_model.insert().values({
+            "nombre": model.nombre,
+            "slug": slugify(model.nombre)
+        }))
+        conectar.commit()
+        
+        return {"mensaje": "se ha creado correctamente"}
+    except:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ocurrio un error")
+    
+    
+    
+@api.put("/categorias/{id}", tags=['Categorías'],response_model=ResponseEsquema, status_code=status.HTTP_200_OK)
+async def categorias_put(id: int, model:CategoriaEsquema):
+    datos = conectar.execute(categorias_model.select().where(categorias_model.c.id==id)).first()
+    if datos:
+        conectar.execute(categorias_model.update().values(nombre=model.nombre, slug= slugify(model.nombre)).where(categorias_model.c.id==id))
+        conectar.commit()
+        return {"mensaje": "se ha modificado correctamente"}
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="sin resultados")
+
+
+
+@api.delete("/categorias/{id}", tags=['Categorías'],response_model=ResponseEsquema, status_code=status.HTTP_200_OK)
+async def categorias_delete(id: int, model:CategoriaEsquema):
+    datos = conectar.execute(categorias_model.select().where(categorias_model.c.id==id)).first()
+    if datos:
+        
+        existe = conectar.execute(peliculas_model.select().where(peliculas_model.c.categorias_id==id)).first()
+        if existe:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede eliminar pues esta asociado en al menos una pelicula")
+        else:
+            conectar.execute(categorias_model.delete().where(categorias_model.c.id==id))
+            conectar.commit()
+        return {"mensaje": "se ha eliminado correctamente"}
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="sin resultados")
+
+
