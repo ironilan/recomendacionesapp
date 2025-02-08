@@ -24,6 +24,23 @@ class GeneroEsquema(BaseModel):
         }
         
         
+class CalificacionEsquema(BaseModel):
+    id:Optional[int] = ""
+    id_pelicula:int
+    id_usuario:int
+    calificacion:int
+    timestamp:Optional[int] = ""
+    
+    class Config:
+        json_schema_extra={
+            "ejemplo": {
+                "id_pelicula": 144,
+                "id_usuario": 1,
+                "calificacion": 5
+            }
+        }
+        
+        
 class CategoriaEsquema(BaseModel):
     id:Optional[int] = ""
     nombre:str
@@ -51,6 +68,25 @@ class PeliculaEsquema(BaseModel):
                 "imagen": "pelicula-1",
                 "descripcion": "pelicula descripcion",
                 "precio": "10.00"
+            }
+        }
+        
+        
+class PeliculaUnicaEsquema(BaseModel):
+    id: Optional[int] = None  # Campo opcional sin valor por defecto incorrecto
+    titulo: str  # Cambiado de "nombre" a "titulo" para coincidir con el endpoint
+    descripcion: str
+    imagen: str
+    genero: List[str]  # Lista de géneros
+
+    class Config:
+        json_schema_extra = {
+            "ejemplo": {
+                "id": 1,
+                "titulo": "pelicula 1",
+                "imagen": "pelicula-1.jpg",
+                "descripcion": "pelicula descripcion",
+                "genero": ["Acción", "Aventura"]  # Ejemplo corregido
             }
         }
         
@@ -84,7 +120,7 @@ class UsuarioEsquema(BaseModel):
     correo:str
     password:str
     fecha:Optional[datetime] = ''
-    perfil_id:int
+    ##perfil_id:int
     
     class Config:
         json_schema_extra={
@@ -96,6 +132,12 @@ class UsuarioEsquema(BaseModel):
                 "perfil_id": 1
             }
         }
+        
+class UltimaPeliculaCalificadaResponse(BaseModel):
+    id: int
+    titulo: str
+    descripcion: str
+    imagen: str
 
 class JwtEsquema(BaseModel):
     token: str
