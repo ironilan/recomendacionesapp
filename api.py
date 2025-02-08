@@ -93,7 +93,7 @@ async def categorias_post(model:GeneroEsquema):
 
 
 
-@api.get("/peliculas", tags=['peliculas'], response_model=PaginacionResponse, status_code=status.HTTP_200_OK)
+@api.get("/peliculas", tags=['Peliculas'], response_model=PaginacionResponse, status_code=status.HTTP_200_OK)
 async def peliculas(page: int = 1, limit: int = 10, username: str = Depends(verificar_token)):
     # Calcular el offset (desplazamiento) basado en la página solicitada y el límite
     offset = (page - 1) * limit
@@ -131,7 +131,7 @@ async def peliculas(page: int = 1, limit: int = 10, username: str = Depends(veri
 
 
 
-@api.post("/peliculas", tags=['peliculas'],response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
+@api.post("/peliculas", tags=['Peliculas'],response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
 async def peliculas_post(model:PeliculaEsquema):
     try:
         conectar.execute(peliculas_model.insert().values({
@@ -152,7 +152,7 @@ async def peliculas_post(model:PeliculaEsquema):
 
 
 
-@api.post("/peliculas/ver", tags=['peliculas'], response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
+@api.post("/peliculas/ver", tags=['Peliculas'], response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
 async def peliculas_ver_post(model: CalificacionEsquema):
     try:
         # Imprimir el contenido del modelo para depuración
@@ -184,13 +184,13 @@ async def peliculas_ver_post(model: CalificacionEsquema):
 
 
 
-@api.get("/peliculas/{id}", tags=['peliculas'], response_model=PeliculaUnicaEsquema, status_code=status.HTTP_200_OK)
+@api.get("/peliculas/{id}", tags=['Peliculas'], response_model=PeliculaUnicaEsquema, status_code=status.HTTP_200_OK)
 async def peliculas_get(id: int, username: str = Depends(verificar_token)):
     # Consulta para obtener la película y sus géneros relacionados
     query = (
         select(
             peliculas_model.c.id,
-            peliculas_model.c.nombre.label("titulo"),  # Alias para que coincida con el esquema
+            peliculas_model.c.nombre.label("titulo"), 
             peliculas_model.c.descripcion,
             peliculas_model.c.imagen,
             generos_model.c.nombre.label("genero_nombre")
@@ -221,89 +221,6 @@ async def peliculas_get(id: int, username: str = Depends(verificar_token)):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Película no encontrada")
 
 
-
-@api.get("/ultima-pelicula-calificada/{id_usuario}", tags=['peliculas'], response_model=UltimaPeliculaCalificadaResponse, status_code=status.HTTP_200_OK)
-async def obtener_ultima_pelicula_calificada(id_usuario: int, username: str = Depends(verificar_token)):
-    query = (
-        select(
-            peliculas_model.c.id,
-            peliculas_model.c.nombre.label("titulo"),
-            peliculas_model.c.descripcion,
-            peliculas_model.c.imagen
-        )
-        .select_from(
-            calificaciones_model
-            .join(peliculas_model, calificaciones_model.c.id_pelicula == peliculas_model.c.id)
-            .join(usuarios_model, usuarios_model.c.id == calificaciones_model.c.id_usuario)
-        )
-        .where(usuarios_model.c.id == id_usuario)
-        .order_by(calificaciones_model.c.id.desc())  # Ordenar por ID de calificación en orden descendente
-        .limit(1)  # Limitar a solo el último registro
-    )
-
-    # Ejecutar la consulta
-    resultado = conectar.execute(query).fetchone()
-
-    if not resultado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No se encontraron películas calificadas por este usuario.",
-        )
-
-    # Formatear la respuesta
-    pelicula = {
-        "id": resultado[0],
-        "titulo": resultado[1],
-        "descripcion": resultado[2],
-        "imagen": resultado[3],
-    }
-
-    return pelicula
-
-
-
-
-@api.get("/users", tags=['usuarios'],response_model=List[UsuarioEsquema], status_code=status.HTTP_200_OK)
-async def users():
-    return conectar.execute(usuarios_model.select().order_by(usuarios_model.c.id.desc())).fetchall()
-
-
-    
-@api.post("/register", tags=['usuarios'], response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
-async def usuarios_post(model: UsuarioEsquema):
-    try:
-        # Verificar si el correo ya existe en la base de datos
-        query = usuarios_model.select().where(usuarios_model.c.correo == model.correo)
-        resultado = conectar.execute(query).fetchone()
-
-        if resultado:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El correo electrónico ya está registrado."
-            )
-
-        # Insertar el nuevo usuario si el correo no existe
-        conectar.execute(usuarios_model.insert().values({
-            "nombre": model.nombre,
-            "correo": model.correo,
-            "fecha": datetime.now(),
-            "password": hashlib.sha512(model.password.encode('utf8')).hexdigest(),
-            "perfil_id": 1,
-        }))
-        conectar.commit()
-
-        return {"mensaje": "Se ha creado el usuario correctamente."}
-    except HTTPException as he:
-        # Capturar y relanzar la excepción HTTPException
-        raise he
-    except Exception as e:
-        # Capturar cualquier otra excepción
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ocurrió un error: {str(e)}"
-        )
-    
-    
 def obtener_peliculas_por_genero(genero_id: int, peliculas: pd.DataFrame, generos_peliculas: pd.DataFrame, n: int = 20):
     peliculas_ids = generos_peliculas[generos_peliculas["genero_id"] == genero_id]["pelicula_id"]
     peliculas_filtradas = peliculas[peliculas["id"].isin(peliculas_ids)].sort_values(by="id", ascending=False).head(n)
@@ -311,7 +228,7 @@ def obtener_peliculas_por_genero(genero_id: int, peliculas: pd.DataFrame, genero
 
 
 
-@api.get("/generos/{genero_id}/peliculas", tags=['Recomendaciones'], response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+@api.get("/generos/{genero_id}/peliculas", tags=['Peliculas'], response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
 async def obtener_peliculas_por_categoria(genero_id: int, username: str = Depends(verificar_token)):
     query_genero = select(generos_model.c.id, generos_model.c.nombre).where(generos_model.c.id == genero_id)
     genero_db = conectar.execute(query_genero).fetchone()
@@ -355,7 +272,7 @@ async def obtener_peliculas_por_categoria(genero_id: int, username: str = Depend
 
 
 
-############################## obtener 20 películas aleatorias por género
+############################## obtener  películas por género
 def obtener_peliculas_aleatorias_por_genero(generos_peliculas: pd.DataFrame, peliculas: pd.DataFrame, n: int = 20):
     # Crear un diccionario para almacenar las películas por género
     peliculas_por_genero = {}
@@ -376,7 +293,7 @@ def obtener_peliculas_aleatorias_por_genero(generos_peliculas: pd.DataFrame, pel
     
     return peliculas_por_genero
 
-@api.get("/generos/peliculas", tags=['Recomendaciones'], response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+@api.get("/generos/peliculas", tags=['Peliculas'], response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
 async def obtener_peliculas_por_categoria(search: str = None, username: str = Depends(verificar_token)):
     # Consultar todos los géneros
     query_generos = select(generos_model.c.id, generos_model.c.nombre)
@@ -437,36 +354,111 @@ async def obtener_peliculas_por_categoria(search: str = None, username: str = De
 
 
 
+@api.get("/ultima-pelicula-calificada/{id_usuario}", tags=['Peliculas'], response_model=UltimaPeliculaCalificadaResponse, status_code=status.HTTP_200_OK)
+async def obtener_ultima_pelicula_calificada(id_usuario: int, username: str = Depends(verificar_token)):
+    query = (
+        select(
+            peliculas_model.c.id,
+            peliculas_model.c.nombre.label("titulo"),
+            peliculas_model.c.descripcion,
+            peliculas_model.c.imagen
+        )
+        .select_from(
+            calificaciones_model
+            .join(peliculas_model, calificaciones_model.c.id_pelicula == peliculas_model.c.id)
+            .join(usuarios_model, usuarios_model.c.id == calificaciones_model.c.id_usuario)
+        )
+        .where(usuarios_model.c.id == id_usuario)
+        .order_by(calificaciones_model.c.id.desc())  # Ordenar por ID de calificación en orden descendente
+        .limit(1)  # Limitar a solo el último registro
+    )
+
+    # Ejecutar la consulta
+    resultado = conectar.execute(query).fetchone()
+
+    if not resultado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontraron películas calificadas por este usuario.",
+        )
+
+    # Formatear la respuesta
+    pelicula = {
+        "id": resultado[0],
+        "titulo": resultado[1],
+        "descripcion": resultado[2],
+        "imagen": resultado[3],
+    }
+
+    return pelicula
 
 
 
 
-def recomendaciones_contenido(titulo: str, peliculas: pd.DataFrame, top_n: int = 5):
-    """
-    Devuelve recomendaciones de películas basadas en la similitud de contenido.
+@api.get("/users", tags=['usuarios'],response_model=List[UsuarioEsquema], status_code=status.HTTP_200_OK)
+async def users():
+    return conectar.execute(usuarios_model.select().order_by(usuarios_model.c.id.desc())).fetchall()
+
+
     
-    :param titulo: Título de la película para la cual se desean recomendaciones.
-    :param peliculas: DataFrame que contiene las películas con columnas 'nombre' y 'descripcion'.
-    :param top_n: Número de recomendaciones a devolver.
-    :return: DataFrame con las películas recomendadas.
-    """
+@api.post("/register", tags=['Autenticacion'], response_model=ResponseEsquema, status_code=status.HTTP_201_CREATED)
+async def usuarios_post(model: UsuarioEsquema):
+    try:
+        # Verificar si el correo ya existe en la base de datos
+        query = usuarios_model.select().where(usuarios_model.c.correo == model.correo)
+        resultado = conectar.execute(query).fetchone()
+
+        if resultado:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El correo electrónico ya está registrado."
+            )
+
+        # Insertar el nuevo usuario si el correo no existe
+        conectar.execute(usuarios_model.insert().values({
+            "nombre": model.nombre,
+            "correo": model.correo,
+            "fecha": datetime.now(),
+            "password": hashlib.sha512(model.password.encode('utf8')).hexdigest(),
+            "perfil_id": 1,
+        }))
+        conectar.commit()
+
+        return {"mensaje": "Se ha creado el usuario correctamente."}
+    except HTTPException as he:
+        # Capturar y relanzar la excepción HTTPException
+        raise he
+    except Exception as e:
+        # Capturar cualquier otra excepción
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ocurrió un error: {str(e)}"
+        )
+    
+    
+
+
+#################### Recomendaciones basadas en contenido ################################
+def recomendaciones_contenido(titulo: str, peliculas: pd.DataFrame, top_n: int = 5):
     try:
         # Verifica si el título existe en el DataFrame
         if titulo not in peliculas["nombre"].values:
-            return pd.DataFrame()  # Retorna un DataFrame vacío si el título no existe
+            return pd.DataFrame()  # Retornamos un DataFrame vacío si no se encuentra la pelicula
 
         # Preprocesamiento de texto
         tfidf = TfidfVectorizer(stop_words="english")
         peliculas["descripcion"] = peliculas["descripcion"].fillna("")
+        #matriz donee Las filas representan películas. Las columnas representan palabras en la descripción de las películas.
         tfidf_matrix = tfidf.fit_transform(peliculas["descripcion"])
 
-        # Cálculo de similitud coseno
+        # Cálculo de similitud coseno (cuan similares son dos vectores)
         similitud_coseno = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
         # Obtener el índice de la película con el título dado
         idx = peliculas[peliculas["nombre"] == titulo].index[0]
 
         # Obtener las películas más similares
+        # similitud_coseno[idx] Obtiene la fila correspondiente a la película dada, que contiene su similitud con todas las demás películas.
         puntajes_similitud = list(enumerate(similitud_coseno[idx]))
         puntajes_similitud = sorted(puntajes_similitud, key=lambda x: x[1], reverse=True)
         puntajes_similitud = puntajes_similitud[1:top_n + 1]  # Excluir la película misma
@@ -477,17 +469,16 @@ def recomendaciones_contenido(titulo: str, peliculas: pd.DataFrame, top_n: int =
         print(f"Error en recomendaciones_contenido: {e}")
         return pd.DataFrame()  # Retorna un DataFrame vacío en caso de error
 
-#################### recomendaciones basadas en contenido ################################
 
 @api.get("/recomendaciones/pelicula/{titulo}", tags=['Recomendaciones'], response_model=List[Dict[str, Any]], status_code=status.HTTP_200_OK)
 async def obtener_recomendaciones(titulo: str, top_n: int = 5):
    
     # Obtener las películas de la base de datos
-    query = select(peliculas_model.c.id, peliculas_model.c.nombre, peliculas_model.c.descripcion, peliculas_model.c.imagen)  # Corrección aquí
+    query = select(peliculas_model.c.id, peliculas_model.c.nombre, peliculas_model.c.descripcion, peliculas_model.c.imagen)  
     peliculas_db = conectar.execute(query).fetchall()
 
     # Convertir a DataFrame de pandas
-    peliculas = pd.DataFrame(peliculas_db, columns=["id","nombre", "descripcion", "imagen"])  # Corrección aquí
+    peliculas = pd.DataFrame(peliculas_db, columns=["id","nombre", "descripcion", "imagen"])  
 
     # Obtener recomendaciones
     recomendaciones = recomendaciones_contenido(titulo, peliculas, top_n)
@@ -503,67 +494,6 @@ async def obtener_recomendaciones(titulo: str, top_n: int = 5):
 
 
 #################### Recomendaciones colaborativas ################################
-
-# def recomendaciones_colaborativas(id_usuario: int, calificaciones: pd.DataFrame, peliculas: pd.DataFrame, top_n: int = 5):
-  
-#     try:
-#         # Crear la matriz usuario-película
-#         matriz_usuario_pelicula = calificaciones.pivot(index="id_usuario", columns="id_pelicula", values="calificacion").fillna(0)
-        
-#         # Verificar si el usuario está en la matriz
-#         if id_usuario not in matriz_usuario_pelicula.index:
-#             return pd.DataFrame()  # Retorna un DataFrame vacío si el usuario no existe
-        
-#         # Aplicar modelo de vecinos más cercanos
-#         modelo = NearestNeighbors(metric="cosine", algorithm="brute")
-#         modelo.fit(matriz_usuario_pelicula)
-        
-#         # Encontrar vecinos más cercanos
-#         distancias, indices = modelo.kneighbors([matriz_usuario_pelicula.loc[id_usuario]], n_neighbors=top_n + 1)
-#         indices_recomendados = indices.flatten()[1:]  # Omitimos el primer índice (el usuario mismo)
-        
-#         #print(indices_recomendados)
-#         # Obtener las películas recomendadas
-#         peliculas_recomendadas = matriz_usuario_pelicula.columns[indices_recomendados]
-        
-#         # Ajuste: Filtrar películas por 'id' en lugar de 'id_pelicula'
-#         return peliculas[peliculas["id"].isin(peliculas_recomendadas)]
-    
-#     except Exception as e:
-#         print(f"Error en recomendaciones_colaborativas: {e}")
-#         return pd.DataFrame()  # Retorna un DataFrame vacío en caso de error
-
-# @api.get("/recomendaciones/colaborativas/{id_usuario}", tags=['Recomendaciones'], response_model=List[Dict[str, Any]], status_code=status.HTTP_200_OK)
-# async def obtener_recomendaciones_colaborativas(id_usuario: int, top_n: int = 5):
-   
-#     # Obtener las calificaciones de la base de datos
-#     query_calificaciones = select(calificaciones_model.c.id_usuario, calificaciones_model.c.id_pelicula, calificaciones_model.c.calificacion)
-#     calificaciones_db = conectar.execute(query_calificaciones).fetchall()
-
-#     ##print(calificaciones_db)
-#     calificaciones = pd.DataFrame(calificaciones_db, columns=["id_usuario", "id_pelicula", "calificacion"])
-    
-#     # Obtener las películas de la base de datos
-#     query_peliculas = select(peliculas_model.c.id, peliculas_model.c.nombre, peliculas_model.c.descripcion)
-#     peliculas_db = conectar.execute(query_peliculas).fetchall()
-
-#     # Ajuste: Usar nombres correctos en películas
-#     peliculas = pd.DataFrame(peliculas_db, columns=["id", "nombre", "descripcion"])
-    
-#     # Obtener recomendaciones
-#     recomendaciones = recomendaciones_colaborativas(id_usuario, calificaciones, peliculas, top_n)
-    
-#     if recomendaciones.empty:
-#         raise HTTPException(status_code=404, detail="Usuario no encontrado o no hay recomendaciones disponibles")
-    
-#     # Convertir el DataFrame de recomendaciones a una lista de diccionarios
-#     recomendaciones_json = recomendaciones.to_dict(orient="records")
-    
-#     return recomendaciones_json
-
-
-
-
 
 def recomendaciones_colaborativas(id_usuario: int, calificaciones: pd.DataFrame, peliculas: pd.DataFrame, top_n: int = 5):
     try:
@@ -663,6 +593,7 @@ async def obtener_vieron_tambien(id_pelicula: int, top_n: int = 5):
 
 #################### Recomendaciones peliculas sorprendentes ################################
 def peliculas_sorprendentes(calificaciones: pd.DataFrame, peliculas: pd.DataFrame, n: int = 5):
+    #calcula el promedio de las calificaciones por pelicula
     calificaciones_promedio = calificaciones.groupby("id_pelicula")["calificacion"].mean().reset_index()
     calificaciones_promedio = calificaciones_promedio.rename(columns={"calificacion": "calificacion_promedio"})
     peliculas = peliculas.merge(calificaciones_promedio, left_on="id", right_on="id_pelicula", how="left").fillna(0)
